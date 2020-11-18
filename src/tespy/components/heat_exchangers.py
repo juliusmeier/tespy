@@ -1297,6 +1297,7 @@ class parabolic_trough(heat_exchanger_simple):
 
         self.E_P = self.outl[0].Ex_physical - self.inl[0].Ex_physical
         self.E_F = (1 - (self.Tamb.val_SI / T_m)) * self.Q.val
+        self.epsilon = self.E_P / self.E_F
 
 # %%
 
@@ -2533,6 +2534,7 @@ class heat_exchanger(component):
         """
         self.E_P = self.outl[1].Ex_physical - self.inl[1].Ex_physical
         self.E_F = self.inl[0].Ex_physical - self.outl[0].Ex_physical
+        self.epsilon = self.E_P / self.E_F
 
 # %%
 
@@ -2735,6 +2737,7 @@ class condenser(heat_exchanger):
             'subcooling': dc_simple(val=False),
             'kA_char': dc_simple(),
             'kA_char1': dc_cc(param='m'), 'kA_char2': dc_cc(param='m'),
+            'dissipative': dc_simple(val=True),
             'SQ1': dc_simple(), 'SQ2': dc_simple(), 'Sirr': dc_simple(),
         }
 
@@ -2971,6 +2974,8 @@ class condenser(heat_exchanger):
             self.E_P = self.outl[1].Ex_physical - self.inl[1].Ex_physical
 
         self.E_F = self.inl[0].Ex_physical - self.outl[0].Ex_physical
+        
+        self.epsilon = 'n/a'
 
 # %%
 

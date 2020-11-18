@@ -1445,6 +1445,8 @@ class merge(node):
             if self.inl[i].T.val_SI > self.outl[0].T.val_SI:
                 self.E_F += self.inl[i].m.val_SI * (self.inl[i].ex_physical
                                                     - self.outl[0].ex_physical)
+        
+        self.epsilon = self.E_P / self.E_F
 
 # %%
 

@@ -829,31 +829,6 @@ class compressor(turbomachine):
 
         self.check_parameter_bounds()
 
-    def exergy_balance(self, bus):
-        r"""
-        Calculate exergy balance of a compressor.
-
-        Parameters
-        ----------
-        bus  : tespy.connections.bus
-            Energy flows in network. Used to calculate product exergy
-            or fuel exergy of turbines, pumps and compressors.
-
-        Note
-        ----
-        .. math::
-
-            \dot{E_P} = \dot{m}_{in} \cdot \left( e_{ph,out} - e_{ph,in} \right)\\
-            \dot{E_F} = P
-        """
-        self.E_P = self.inl[0].m.val_SI * (
-            self.outl[0].ex_physical - self.inl[0].ex_physical)
-        
-        if bus is None:
-            self.E_F = self.P.val
-        else:
-            self.E_F = self.calc_bus_value(bus)
-
 # %%
 
 
@@ -1318,6 +1293,8 @@ class pump(turbomachine):
             self.E_F = self.P.val
         else:
             self.E_F = self.calc_bus_value(bus)
+        
+        self.epsilon = self.E_P / self.E_F
 
 # %%
 
@@ -1803,3 +1780,5 @@ class turbine(turbomachine):
             self.E_P = abs(self.calc_bus_value(bus))
 
         self.E_F = self.inl[0].Ex_physical - self.outl[0].Ex_physical
+        
+        self.epsilon = self.E_P / self.E_F
