@@ -2614,18 +2614,6 @@ class network:
         for cp in self.comps.index:
             cp.exergy_balance(bus)
 
-            # calculate E_D of components
-            if cp.E_P == 'n/d':
-                cp.E_D = cp.E_F
-            else:
-                cp.E_D = cp.E_F - cp.E_P
-            # calculate epsilon of components
-            if cp.E_P == 'n/d':
-                cp.epsilon ='n/a'
-            elif cp.E_F != 0:
-                cp.epsilon = cp.E_P / cp.E_F
-            else:
-                cp.epsilon = np.nan
             # sum up exergy destruction of components
             if np.isnan(cp.E_D):
                 None

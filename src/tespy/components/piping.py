@@ -555,4 +555,5 @@ class valve(component):
         """
         self.E_P = 'n/d'
         self.E_F = self.inl[0].Ex_physical - self.outl[0].Ex_physical
+        self.E_D = self.E_F
         self.epsilon = 'n/a'

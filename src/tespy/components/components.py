@@ -597,6 +597,7 @@ class component:
         """
         self.E_F = np.nan
         self.E_P = np.nan
+        self.E_D = np.nan
         self.epsilon = np.nan
         logging.warning('Exergy balance not available for components of type '
                         + self.component() + ' (' + self.label + ').')

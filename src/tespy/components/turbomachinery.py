@@ -1294,6 +1294,7 @@ class pump(turbomachine):
         else:
             self.E_F = self.calc_bus_value(bus)
         
+        self.E_D = self.E_F - self.E_P
         self.epsilon = self.E_P / self.E_F
 
 # %%
@@ -1780,5 +1781,5 @@ class turbine(turbomachine):
             self.E_P = abs(self.calc_bus_value(bus))
 
         self.E_F = self.inl[0].Ex_physical - self.outl[0].Ex_physical
-        
+        self.E_D = self.E_F - self.E_P
         self.epsilon = self.E_P / self.E_F

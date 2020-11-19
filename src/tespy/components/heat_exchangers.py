@@ -35,6 +35,7 @@ from tespy.tools.fluid_properties import dh_mix_dpQ
 from tespy.tools.fluid_properties import h_mix_pQ
 from tespy.tools.fluid_properties import h_mix_pT
 from tespy.tools.fluid_properties import s_mix_ph
+from tespy.tools.fluid_properties import s_mix_pT
 from tespy.tools.fluid_properties import v_mix_ph
 from tespy.tools.fluid_properties import visc_mix_ph
 from tespy.tools.global_vars import err
@@ -1269,7 +1270,8 @@ class parabolic_trough(heat_exchanger_simple):
         r"""
         Calculate exergy balance of a parabolic trough.\\
         Here, the exergy balance includes exergy destruction due to pressure
-        losses, not due to heat losses.
+        losses, not due to heat losses since there is too little information
+        about the hot side.
 
         Parameters
         ----------
@@ -1281,22 +1283,32 @@ class parabolic_trough(heat_exchanger_simple):
         ----
         .. math::
 
-            \dot{E_P} = \dot{m}_{in} \cdot \left( e_{ph,out} - e_{ph,in} \right)\\
-            \dot{E_F} = \left(1 - \frac{T_{\text{amb}}}{T_{\text{m}}}\right) 
-            \cdot \dot{Q}\\
-            T_{\text{m}} = \frac{T_\text{in} + T_\text{out}}{2}
+            \dot{E_P} = \dot{m}_{in} \cdot \left( e_{ph,out} - 
+                                                 e_{ph,in} \right)
+            \dot{E_F} = \dot{m}_{in} \cdot \left( e^\text{T}_{out} - 
+                                                 e^\text{T}_{in} \right)
+            e^\text{T}_{out} - 
+            e^\text{T}_{in} = \left( h(T_{out}, p_{in}) - 
+                                    h_{in} \right - T_{amb} 
+                                    \cdot \left( s(T_{out},p_{in}) - 
+                                                s_{in} \right) 
+            
+        
         """
         if np.isnan(self.Tamb.val_SI):
             logging.warning('For exergy analysis, Tamb must be specified for component of type'
                         + self.component() + ' (' + self.label + ').')
 
-        i = self.inl[0].to_flow()
+        i = self.inl[0].to_flow()   # m p h fluid
         o = self.outl[0].to_flow()
-        T_m = (T_mix_ph(i, T0=self.inl[0].T.val_SI) +
-               T_mix_ph(o, T0=self.outl[0].T.val_SI)) / 2
-
+        hoT = h_mix_pT([o[0], i[1], o[2], o[3]], self.outl[0].T.val_SI)
+        soT = s_mix_pT([o[0], i[1], o[2], o[3]], self.outl[0].T.val_SI)
+        
         self.E_P = self.outl[0].Ex_physical - self.inl[0].Ex_physical
-        self.E_F = (1 - (self.Tamb.val_SI / T_m)) * self.Q.val
+        self.E_F = self.inl[0].m.val_SI * ((hoT - self.inl[0].h.val_SI) - 
+                                         self.Tamb.val_SI * (soT - self.inl[0].s.val_SI))
+
+        self.E_D = self.E_F - self.E_P
         self.epsilon = self.E_P / self.E_F
 
 # %%
@@ -2534,6 +2546,7 @@ class heat_exchanger(component):
         """
         self.E_P = self.outl[1].Ex_physical - self.inl[1].Ex_physical
         self.E_F = self.inl[0].Ex_physical - self.outl[0].Ex_physical
+        self.E_D = self.E_F - self.E_P
         self.epsilon = self.E_P / self.E_F
 
 # %%
@@ -2742,9 +2755,6 @@ class condenser(heat_exchanger):
         }
 
     def comp_init(self, nw):
-
-        # for exergy balance
-        self.dissipative = True
 
         component.comp_init(self, nw)
 
@@ -2960,22 +2970,28 @@ class condenser(heat_exchanger):
 
         Note
         ----
+        The condenser is considered as a dissipative component. If you want to
+        use it as a normal heat exchanger, you can specify 
+        :code:`yourcondenser.set_attr(dissipative=False)`.
+
         .. math::
-            
+
             dot{E_P} = \begin{cases}
             \text{not defined (n/d)} & \text{heat dissipation (default)} \\
             \dot{m}_{in,2} \cdot (e_{ph,in,2} - e_{ph,out,2}) & \\
             \end{cases}\\
             \dot{E_F} = \dot{m}_{in} \cdot \left( e_{ph,in} - e_{ph,out} \right)
         """
-        if self.dissipative is True:
+        self.E_F = self.inl[0].Ex_physical - self.outl[0].Ex_physical
+
+        if self.dissipative.val:
             self.E_P = 'n/d'
+            self.epsilon = 'n/a'
+            self.E_D = self.E_F
         else:
             self.E_P = self.outl[1].Ex_physical - self.inl[1].Ex_physical
-
-        self.E_F = self.inl[0].Ex_physical - self.outl[0].Ex_physical
-        
-        self.epsilon = 'n/a'
+            self.E_D = self.E_F - self.E_P
+            self.epsilon = self.E_P / self.E_F
 
 # %%
 
