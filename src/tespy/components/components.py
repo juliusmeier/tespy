@@ -599,9 +599,12 @@ class component:
         self.E_P = np.nan
         self.E_D = np.nan
         self.epsilon = np.nan
-        logging.warning('Exergy balance not available for components of type '
-                        + self.component() + ' (' + self.label + ').')
-
+        
+        comp = self.component()
+        if comp not in ['cycle closer', 'sink', 'source', 'splitter']:
+            logging.warning('Exergy balance not available for components of type '
+                            + self.component() + ' (' + self.label + ').')
+            
 # %%
 
     def fluid_func(self):

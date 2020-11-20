@@ -2526,7 +2526,7 @@ class network:
     def exergy_analysis(self,
                         pamb=101325,
                         Tamb=298.15,
-                        bus={}, E_F=None, E_L=None):
+                        power_bus={}, E_F=None, E_L=None):
         r"""Perform exergy analysis.
 
         - Get values for physical exergy of connections.
@@ -2536,13 +2536,8 @@ class network:
           Componentes for which no exergy balance has yet been implemented,
           :code:`nan` is assigned for fuel exergy and product exergy.
           Dissipative components do not have product exergy per definition 
-          (n/d).
-        - Calculate exergy destruction and exergetic efficiency of components.
-          Components, that do not have fuel exergy
-          (:math:`E_{\text{F},comp}=0`) the efficiency value :math:`\epsilon`
-          will be :code:`nan`.
-          Since dissipative components do not have product exergy, an exergetic
-          efficiency is not available (n/a).
+          (n/d). Consequently, it is not possible to calculate an exergetic
+          efficency (n/a).
         - The exergy destruction of components is sumed up following a bottom
           up approach in order to compare it with the overall exergy 
           destruction calculated with an exergy balance of the network. Both
@@ -2564,13 +2559,12 @@ class network:
             Ambient pressure in network's pressure unit.
         Tamb : float
             Ambient temperature in network's temperature unit.
-        busses : dict
+        power_bus : dict
             A dictionary containing bus instances as keys and a list of
             components that should evaluate on the bus value instead of the
             component value, e.g. for electrical power of turbomachinery.
         E_F : list
-            List containing components which represent fuel exergy input
-            in network.
+            List containing components which represent fuel exergy of network.
         E_L : list
             List containing connections which represent exergy loss streams.
 
@@ -2609,11 +2603,9 @@ class network:
             conn.get_physical_exergy(pamb, Tamb)
 
         # exergy balance of components 
-        # calculation of E_D and epsilon of components and
         # bottom up calculation of exergy destruction of components
         for cp in self.comps.index:
-            cp.exergy_balance(bus)
-
+            cp.exergy_balance(power_bus)
             # sum up exergy destruction of components
             if np.isnan(cp.E_D):
                 None
@@ -2621,8 +2613,7 @@ class network:
                 self.E_D_sum += cp.E_D
 
         # calculate E_P, E_F, E_L, E_D and epsilon of network
-        for b in self.busses.values():
-            self.E_P = b.P.val*-1
+        self.E_P = abs(power_bus.P.val)
 
         for cp in E_F:
             self.E_F += cp.E_F
@@ -2636,9 +2627,6 @@ class network:
 
         # calculate exergy destruction ratios for components
         for cp in self.comps.index:
-            if (isinstance(cp, cycle_closer) or isinstance(cp, sink) or
-                    isinstance(cp, source) or isinstance(cp, splitter)):
-                continue
             cp.y_Dk = cp.E_D / self.E_F
             cp.ystar_Dk = cp.E_D / self.E_D
 
@@ -2741,7 +2729,7 @@ class network:
         else:
             return np.nan
 
-    def print_exergy_conns(self):
+    def print_connection_exergy_data(self):
         r"""Print the calculations results of the (specific) physical exergy of
         the connections to prompt.
         """
@@ -2758,7 +2746,7 @@ class network:
               'physical exergy #####')
         print(tabulate(df, headers='keys', tablefmt='psql', floatfmt='.4f'))
 
-    def print_exergy_comps(self, E_D_min=1000, sort_desc=True):
+    def print_exergy_analysis(self, E_D_min=1000, sort_desc=True):
         r"""Print the calculations results of the exergy analysis of
         components and network to prompt.
 
@@ -2782,7 +2770,6 @@ class network:
                 continue
             if not isinstance(cp.E_P, str):
                 cp.E_P = round(cp.E_P / 10**6, 4)
-            if not isinstance(cp.epsilon, str):
                 cp.epsilon = round(cp.epsilon, 4)
             if np.isnan(cp.E_D) or cp.E_D < E_D_min:
                 continue
