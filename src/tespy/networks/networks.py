@@ -2524,8 +2524,8 @@ class network:
         logging.info(msg)
 
     def exergy_analysis(self,
-                        pamb=101325,
-                        Tamb=298.15,
+                        pamb,
+                        Tamb,
                         power_bus={}, E_F=None, E_L=None):
         r"""Perform exergy analysis.
 
@@ -2557,14 +2557,18 @@ class network:
         ----------
         pamb : float
             Ambient pressure in network's pressure unit.
+
         Tamb : float
             Ambient temperature in network's temperature unit.
+
         power_bus : dict
             A dictionary containing bus instances as keys and a list of
             components that should evaluate on the bus value instead of the
             component value, e.g. for electrical power of turbomachinery.
+
         E_F : list
             List containing components which represent fuel exergy of network.
+
         E_L : list
             List containing connections which represent exergy loss streams.
 
@@ -2589,6 +2593,9 @@ class network:
             y^*_{\text{D},comp} =
             \frac{\dot{E}_{\text{D},comp}}{\dot{E}_{\text{D}}}
         """
+        pamb_SI = self.convert_to_SI('p', pamb, self.p_unit)
+        Tamb_SI = self.convert_to_SI('T', Tamb, self.T_unit)
+        
         self.E_L = 0
         self.E_F = 0
         self.E_D = 0
@@ -2600,12 +2607,12 @@ class network:
 
         # physical exergy of connections
         for conn in self.conns.index:
-            conn.get_physical_exergy(pamb, Tamb)
+            conn.get_physical_exergy(pamb_SI, Tamb_SI)
 
         # exergy balance of components 
         # bottom up calculation of exergy destruction of components
         for cp in self.comps.index:
-            cp.exergy_balance(power_bus)
+            cp.exergy_balance(power_bus, Tamb_SI)
             # sum up exergy destruction of components
             if np.isnan(cp.E_D):
                 None
@@ -2759,6 +2766,7 @@ class network:
         ----------
         E_D_min : float
             Minimum exergy destruction to be printed to prompt.
+            E_D_min / Watt
         sort_des : boolean
             Sort the component results descending by exergy destruction.
         """

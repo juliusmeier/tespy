@@ -536,7 +536,7 @@ class valve(component):
 
         self.check_parameter_bounds()
 
-    def exergy_balance(self, bus):
+    def exergy_balance(self, bus, Tamb):
         r"""
         Calculate exergy balance of a valve.
 
@@ -545,6 +545,9 @@ class valve(component):
         bus  : tespy.connections.bus
             Energy flows in network. Used to calculate product exergy
             or fuel exergy of turbines, pumps and compressors.
+
+        Tamb : float
+            Ambient temperature Tamb / K.
 
         Note
         ----

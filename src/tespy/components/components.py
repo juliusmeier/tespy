@@ -586,7 +586,7 @@ class component:
     def convergence_check(self, nw):
         return
 
-    def exergy_balance(self, bus):
+    def exergy_balance(self, bus, Tamb):
         r"""Exergy balance calculation method.
 
         Parameters
@@ -594,6 +594,9 @@ class component:
         bus  : tespy.connections.bus
             Energy flows in network. Used to calculate product exergy
             or fuel exergy of turbines, pumps and compressors.
+            
+        Tamb : float
+            Ambient temperature Tamb / K.
         """
         self.E_F = np.nan
         self.E_P = np.nan

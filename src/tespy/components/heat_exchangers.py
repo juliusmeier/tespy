@@ -870,6 +870,50 @@ class heat_exchanger_simple(component):
 
         self.check_parameter_bounds()
 
+    def exergy_balance(self, bus, Tamb):
+        r"""
+        Calculate exergy balance of a simple heat exchanger.\\
+        Here, the exergy balance includes exergy destruction due to pressure
+        losses, not due to heat losses since there is too little information
+        about the hot side.
+
+        Parameters
+        ----------
+        bus  : tespy.connections.bus
+            Energy flows in network. Used to calculate product exergy
+            or fuel exergy of turbines, pumps and compressors.
+
+        Tamb : float
+            Ambient temperature Tamb / K.
+
+        Note
+        ----
+        .. math::
+
+            \dot{E}_\text{P} = \dot{m}_{in} \cdot \left( e_{ph,out} - 
+                                                 e_{ph,in} \right)
+            \dot{E}_\text{F} = \dot{m}_{in} \cdot \left( e^\text{T}_{out} - 
+                                                 e^\text{T}_{in} \right)
+            e^\text{T}_{out} - 
+            e^\text{T}_{in} = \left( h(T_{out}, p_{in}) - 
+                                    h_{in} \right) - T_{amb} 
+                                    \cdot \left( s(T_{out},p_{in}) - 
+                                                s_{in} \right) 
+            
+        
+        """
+        i = self.inl[0].to_flow()
+        o = self.outl[0].to_flow()
+        hoT = h_mix_pT([o[0], i[1], o[2], o[3]], self.outl[0].T.val_SI)
+        soT = s_mix_pT([o[0], i[1], o[2], o[3]], self.outl[0].T.val_SI)
+        
+        self.E_P = self.outl[0].Ex_physical - self.inl[0].Ex_physical
+        self.E_F = self.inl[0].m.val_SI * ((hoT - self.inl[0].h.val_SI) - 
+                                         Tamb * (soT - self.inl[0].s.val_SI))
+
+        self.E_D = self.E_F - self.E_P
+        self.epsilon = self.E_P / self.E_F
+
 # %%
 
 
@@ -1265,51 +1309,6 @@ class parabolic_trough(heat_exchanger_simple):
             self.Q_loss.val = self.E.val * self.A.val - self.Q.val
 
         self.check_parameter_bounds()
-
-    def exergy_balance(self, bus):
-        r"""
-        Calculate exergy balance of a parabolic trough.\\
-        Here, the exergy balance includes exergy destruction due to pressure
-        losses, not due to heat losses since there is too little information
-        about the hot side.
-
-        Parameters
-        ----------
-        bus  : tespy.connections.bus
-            Energy flows in network. Used to calculate product exergy
-            or fuel exergy of turbines, pumps and compressors.
-
-        Note
-        ----
-        .. math::
-
-            \dot{E_P} = \dot{m}_{in} \cdot \left( e_{ph,out} - 
-                                                 e_{ph,in} \right)
-            \dot{E_F} = \dot{m}_{in} \cdot \left( e^\text{T}_{out} - 
-                                                 e^\text{T}_{in} \right)
-            e^\text{T}_{out} - 
-            e^\text{T}_{in} = \left( h(T_{out}, p_{in}) - 
-                                    h_{in} \right - T_{amb} 
-                                    \cdot \left( s(T_{out},p_{in}) - 
-                                                s_{in} \right) 
-            
-        
-        """
-        if np.isnan(self.Tamb.val_SI):
-            logging.warning('For exergy analysis, Tamb must be specified for component of type'
-                        + self.component() + ' (' + self.label + ').')
-
-        i = self.inl[0].to_flow()   # m p h fluid
-        o = self.outl[0].to_flow()
-        hoT = h_mix_pT([o[0], i[1], o[2], o[3]], self.outl[0].T.val_SI)
-        soT = s_mix_pT([o[0], i[1], o[2], o[3]], self.outl[0].T.val_SI)
-        
-        self.E_P = self.outl[0].Ex_physical - self.inl[0].Ex_physical
-        self.E_F = self.inl[0].m.val_SI * ((hoT - self.inl[0].h.val_SI) - 
-                                         self.Tamb.val_SI * (soT - self.inl[0].s.val_SI))
-
-        self.E_D = self.E_F - self.E_P
-        self.epsilon = self.E_P / self.E_F
 
 # %%
 
@@ -2525,7 +2524,7 @@ class heat_exchanger(component):
 
         self.check_parameter_bounds()
 
-    def exergy_balance(self, bus):
+    def exergy_balance(self, bus, Tamb):
         r"""
         Calculate exergy balance of a heat exchanger.
 
@@ -2535,13 +2534,16 @@ class heat_exchanger(component):
             Energy flows in network. Used to calculate product exergy
             or fuel exergy of turbines, pumps and compressors.
 
+        Tamb : float
+            Ambient temperature Tamb / K.
+
         Note
         ----
         .. math::
 
-            \dot{E_P} = \dot{m}_{in,cold} \cdot \left(
+            \dot{E}_\text{P} = \dot{m}_{in,cold} \cdot \left(
             e_{ph,out,cold} - e_{ph,in,cold} \right)\\
-            \dot{E_F} = \dot{m}_{in,hot} \cdot \left(
+            \dot{E}_\text{F} = \dot{m}_{in,hot} \cdot \left(
             e_{ph,in,hot} - e_{ph,out,hot} \right)
         """
         self.E_P = self.outl[1].Ex_physical - self.inl[1].Ex_physical
@@ -2958,7 +2960,7 @@ class condenser(heat_exchanger):
         T_o2 = T_mix_ph(o2, T0=self.outl[1].T.val_SI)
         return self.ttd_u.val - T_bp_p(i1) + T_o2
 
-    def exergy_balance(self, bus):
+    def exergy_balance(self, bus, Tamb):
         r"""
         Calculate exergy balance of a condenser.
 
@@ -2967,6 +2969,9 @@ class condenser(heat_exchanger):
         bus  : tespy.connections.bus
             Energy flows in network. Used to calculate product exergy
             or fuel exergy of turbines, pumps and compressors.
+
+        Tamb : float
+            Ambient temperature Tamb / K.
 
         Note
         ----
