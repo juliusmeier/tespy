@@ -2523,10 +2523,8 @@ class network:
         msg = 'Postprocessing complete.'
         logging.info(msg)
 
-    def exergy_analysis(self,
-                        pamb,
-                        Tamb,
-                        power_bus={}, E_F=None, E_L=None):
+    def exergy_analysis(self, pamb, Tamb, power_bus={}, 
+                        E_F=None, E_L=None):
         r"""Perform exergy analysis.
 
         - Get values for physical exergy of connections.
@@ -2694,7 +2692,16 @@ class network:
             print('##### RESULTS (connections) #####')
             print(
                 tabulate(df, headers='keys', tablefmt='psql', floatfmt='.3e'))
-
+        
+        for ind in df.index:
+            df['m / (kg / s)'][ind] = float(df['m / (kg / s)'][ind])
+            #df['p / (bar)'][ind] = float(df['p / (bar)'][ind])
+            df['h / (kJ / kg)'][ind] = float(df['h / (kJ / kg)'][ind])
+            try:
+                df['T / (C)'][ind] = float(df['T / (C)'][ind])
+            except:
+                continue
+        
         for b in self.busses.values():
             df = pd.DataFrame(columns=[
                 'component', 'comp value', 'bus value', 'efficiency'])
@@ -2747,8 +2754,6 @@ class network:
             row_data = [c.ex_physical/10**3, c.Ex_physical/10**6]
             df.loc[row] = row_data
 
-        self.df_exergy_conns = df
-
         print('\n##### RESULTS (connections) Specific physical exergy and ' +
               'physical exergy #####')
         print(tabulate(df, headers='keys', tablefmt='psql', floatfmt='.4f'))
@@ -2792,7 +2797,7 @@ class network:
         print('\n##### RESULTS (components) Exergy analysis #####')
         print(tabulate(df, headers='keys', tablefmt='psql', floatfmt='.4f',
                        showindex=False))
-
+        
         # print network exergy analysis results
         df = pd.DataFrame(columns=['label', 'E_P / MW', 'E_F / MW',
                                    'E_D / MW', 'E_L / MW','epsilon'])
