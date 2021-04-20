@@ -296,12 +296,15 @@ class Drum(DropletSeparator):
             \dot{E}_\mathrm{P} = E_\mathrm{out}^\mathrm{PH}\\
             \dot{E}_\mathrm{F} = \sum E_{\mathrm{in,}j}^\mathrm{PH}
         """
-        self.E_P = self.outl[0].Ex_physical + self.outl[1].Ex_physical
-        self.E_F = self.inl[0].Ex_physical + self.inl[1].Ex_physical
+        self.E_P = 0
+        self.E_F = 0
+        #self.E_P = self.outl[0].Ex_physical + self.outl[1].Ex_physical
+        #self.E_F = self.inl[0].Ex_physical + self.inl[1].Ex_physical
 
         self.E_bus = np.nan
         self.E_D = self.E_F - self.E_P
-        self.epsilon = self.E_P / self.E_F
+        self.epsilon = 0
+        #self.epsilon = self.E_P / self.E_F
 
     def get_plotting_data(self):
         """
